@@ -1,0 +1,48 @@
+name: Testing GPT Code Critic
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  analyze-code:
+    name: Test action
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Get Git changes
+        run: |
+          git fetch origin ${{ github.ref }}
+          git diff --name-only --diff-filter=AM HEAD~1 HEAD > changes.txt
+
+      - name: Check if any changes
+        run: |
+          if ! [[ -s changes.txt ]]; then
+            echo "No changes found."
+            exit 0
+          fi
+
+      - name: Send changes to GPT Code Critic
+        run: |
+          package="{\"key\":\"${{ inputs.OPENAI_API_KEY }}\",\"files\":["
+          while read -r file; do
+            if [[ $(git diff HEAD $file | wc -l) -le 205 ]]; then
+              code=$(git diff HEAD~1 HEAD $file | tail -n +5 | sed 's/^+//')
+              package="$package{\"name\": \"$file\", \"code\": \"$code\"},"
+              echo "Changes in $file complete."
+            else
+              echo "Changes in $file too large (limited to 200 lines)."
+            fi
+          done < changes.txt
+          package="${package,*}]}"
+
+          curl -X POST -H "Content-Type: application/json" -d "${package}" https://tuneer.cis188.org/analyze --output results.sarif
+
+      - name: Upload results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: results.sarif
