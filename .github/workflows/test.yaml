@@ -26,6 +26,10 @@ jobs:
             exit 0
           fi
 
+      - name: Print changes
+        run: |
+          cat changes.txt
+
       - name: Send changes to GPT Code Critic
         run: |
           package="{\"key\":\"${{ inputs.OPENAI_API_KEY }}\",\"files\":["
@@ -41,6 +45,10 @@ jobs:
           package="${package,*}]}"
 
           curl -X POST -H "Content-Type: application/json" -d "${package}" https://tuneer.cis188.org/analyze --output results.sarif
+
+      - name: Print results
+        run: |
+          cat results.sarif
 
       - name: Upload results
         uses: github/codeql-action/upload-sarif@v2
