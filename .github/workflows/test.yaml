@@ -52,6 +52,8 @@ jobs:
           done < changes.txt
           package="${package,*}]}"
 
+          echo $package
+
           curl -w "%{http_code}" -X POST -H "Content-Type: application/json" -d "${package}" https://tuneer.cis188.org/analyze
 
       - name: Print results
