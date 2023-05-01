@@ -44,10 +44,11 @@ jobs:
           while read -r file; do
             if [[ $(git diff HEAD $file | wc -l) -le 205 ]]; then
               # get difference between current and previous commit
-              code=$(git diff HEAD~1 HEAD $file | tail -n +5 | sed 's/^+//')
+              code=$(git diff HEAD~1 HEAD $file | tail -n +5)
+              #  | sed 's/^+//')
 
               # escape all quotes
-              code=$(echo $code | sed 's/"/\\"/g')
+              # code=$(echo $code | sed 's/"/\\"/g')
 
               package="$package{\"name\": \"$file\", \"code\": \"$code\"},"
               echo "Changes in $file complete."
