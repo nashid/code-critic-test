@@ -49,6 +49,9 @@ jobs:
               # escape all special characters
               code=$(echo "$code" | sed 's/[\\"/]/\\&/g; s/$/\\/')
 
+              # replace all new lines with "\n"
+              code=$(echo "$code" | sed ':a;N;$!ba;s/\n/\\n/g')
+
               package="$package{\"name\": \"$file\", \"code\": \"$code\"},"
               echo "Changes in $file complete."
             else
