@@ -1,56 +1,48 @@
 import json
 import os
+import re
 import requests
 
-# Get the open API key from GitHub secrets or input
-openapi_key = os.environ.get('OPENAPI_KEY')
+# get the open API key
+openai_api_key = os.environ.get('OPENAI_API_KEY')
 
-# Run git diff to get the difference created by the last commit
-diff_output = os.popen('git diff HEAD^ HEAD').read()
+# if no key is found, exit
+if not openai_api_key:
+    print('No OpenAPI key found. Exiting...')
+    exit()
 
-# If there are no differences, do nothing
-if not diff_output:
+# get file names of all files that changed
+changed_files = os.popen('git diff --name-only HEAD^ HEAD').read().split('\n')
+
+# if there are no differences, do nothing
+if not changed_files:
     print('No differences found. Exiting...')
     exit()
 
-print("diff_output: ", diff_output)
+# create package to send to the API
+actual_diffs = []
+for file_path in changed_files:
+    # check if file exists
+    if not os.path.exists(file_path):
+        continue
+    
+    # run git diff on file and skip first 4 lines
+    diff_code = os.popen(f'git diff HEAD^ HEAD {file_path} | tail -n +5').read()
+    actual_diffs.append({
+        'name': file_path,
+        'code': diff_code
+    })
 
-# Split the diff output into separate files
-diff_files = diff_output.split('diff --git ')[1:]
-print("diff_files: ", diff_files)
+package = {
+    'key': openai_api_key,
+    'files': actual_diffs
+}
 
-# Create a list to hold the JSON package for each file
-json_packages = []
+# make a POST request 
+response = requests.post('https://tuneer.cis188.org/analyze', json=package)
 
-# Loop through each file and create the JSON package
-for diff_file in diff_files:
-    print("diff_file: ", diff_file)
+# write the results to a file called "results.sarif"
+with open('results.sarif', 'w') as f:
+    f.write(response.text)
 
-    # Get the file name
-    file_name = diff_file.split(' b/')[1].strip()
-
-    # Get the diff code
-    diff_code = diff_file.split('@@')[1].split('\n@@')[0].strip()
-
-    # Create the JSON package
-    json_package = {
-        'key': openapi_key,
-        'files': [{
-            'name': file_name,
-            'code': diff_code
-        }]
-    }
-
-    # Add the JSON package to the list
-    json_packages.append(json_package)
-
-print("json_packages: ", json_packages)
-
-# Make a POST request to https://tuneer.cis188.org/analyze with the JSON package
-# response = requests.post('https://tuneer.cis188.org/analyze', json=json_packages)
-
-# Write the results to a file called "results.sarif"
-# with open('results.sarif', 'w') as f:
-#     f.write(response.text)
-
-# print('Analysis complete. Results written to "results.sarif"')
+print('Analysis complete. Results written to "results.sarif"')
