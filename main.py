@@ -1,6 +1,4 @@
-import json
 import os
-import re
 import requests
 
 # get the open API key
