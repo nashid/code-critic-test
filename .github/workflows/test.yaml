@@ -14,6 +14,6 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run GPT Code Critic
-        uses: tuneerroy/gpt-code-critic-action@v1
+        uses: tuneerroy/gpt-code-critic@v1
         with:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
